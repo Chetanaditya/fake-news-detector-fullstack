@@ -5,16 +5,28 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize Embedding Model
-embedding_model = SentenceTransformer(
-    "BAAI/bge-small-en-v1.5"
-)
+# Global caches for lazy initialization
+_embedding_model = None
+_pc_index = None
 
-# Initialize Pinecone
-pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+def _get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    return _embedding_model
+
+def _get_pinecone_index():
+    global _pc_index
+    if _pc_index is None:
+        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+        _pc_index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+    return _pc_index
 
 def retrieve_context(query, top_k=3):
+
+    # Initialize lazily
+    embedding_model = _get_embedding_model()
+    index = _get_pinecone_index()
 
     # Encode the query
     query_embedding = embedding_model.encode(query).tolist()
