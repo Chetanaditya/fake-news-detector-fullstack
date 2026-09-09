@@ -227,10 +227,10 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 28, height: 28, background: "#1d4ed8", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>N</div>
           <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", color: "#f3f4f6" }}>NEWSVERIFY</span>
-          <span style={{ fontSize: 10, color: "#4b5563", letterSpacing: "0.1em" }}>// AI CLASSIFIER v2</span>
+          <span style={{ fontSize: 10, color: "#4b5563", letterSpacing: "0.1em" }}>// AI CLASSIFIER</span>
         </div>
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 10, color: "#374151", letterSpacing: "0.08em" }}>POWERED BY OLLAMA PHI3</span>
+        <span style={{ fontSize: 10, color: "#374151", letterSpacing: "0.08em" }}>POWERED BY GROQ</span>
       </header>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
