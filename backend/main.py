@@ -5,15 +5,16 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 
-from rag.retrieve import retrieve_context
+from rag.retrieve import retrieve_context, _get_embedding_model, _get_pinecone_index
 
 import json
+import threading
 
 load_dotenv()
 
 app = FastAPI()
 
-# CORS
+# 1. CORS Middleware (Standard)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -24,6 +25,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2. Background Warm-up
+# Loads heavy models in a separate thread after startup to avoid blocking
+# Render's port detection, while ensuring the first request doesn't timeout.
+@app.on_event("startup")
+async def warmup_models():
+    def load():
+        try:
+            _get_embedding_model()
+            _get_pinecone_index()
+            print("🚀 RAG Models warmed up successfully in background.")
+        except Exception as e:
+            print(f"⚠️ Warm-up failed: {e}")
+
+    threading.Thread(target=load, daemon=True).start()
 
 # Cloud API Client (Groq)
 client = OpenAI(
