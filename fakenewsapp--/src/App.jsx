@@ -154,7 +154,7 @@ export default function App() {
   try {
 
     const response = await fetch(
-      " https://fake-news-detector-fullstack.onrender.com",
+      " https://fake-news-detector-fullstack.onrender.com/analyze",
       {
         method: "POST",
         headers: {
