@@ -4,4 +4,4 @@ openai==1.102.0
 pydantic==2.11.7
 pinecone-client==5.0.1
 python-dotenv==1.0.1
-requests==2.32.3
+huggingface_hub==0.25.2
