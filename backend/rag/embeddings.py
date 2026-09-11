@@ -1,12 +1,14 @@
 import os
 import time
+import requests
 from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
 
 load_dotenv()
 
 # Configuration
-MODEL_ID = "BAAI/bge-small-en-v1.5"
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN")
+MODEL_ID = "@cf/baai/bge-small-en-v1.5"
 EXPECTED_DIM = 384
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
@@ -14,59 +16,71 @@ RETRY_DELAY = 2  # seconds
 def get_embedding(text: str) -> list[float]:
     """
     Generates a 384-dimensional embedding vector for the given text using
-    the Hugging Face Inference API.
+    the Cloudflare Workers AI REST API.
     """
-    api_key = os.getenv("HUGGINGFACE_API_TOKEN")
-    if not api_key:
-        raise ValueError("HUGGINGFACE_API_TOKEN is not set in environment variables.")
+    if not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_API_TOKEN:
+        raise ValueError("CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN is not set in environment variables.")
 
-    # Initialize the official InferenceClient
-    # Note: provider="hf-inference" is the default for serverless API
-    client = InferenceClient(api_key=api_key)
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{MODEL_ID}"
+
+    headers = {
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {"text": text}
 
     attempt = 0
     while attempt < MAX_RETRIES:
         try:
-            # Call feature_extraction
-            # Using the explicit model ID and provider as requested
-            embedding = client.feature_extraction(
-                text,
-                model=MODEL_ID,
-                # provider="hf-inference" is passed here if the SDK version supports it,
-                # otherwise it defaults to hf-inference for serverless
-            )
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
 
-            # 1. Handle the returned shape explicitly
-            # Hugging Face feature_extraction can return a list or a numpy array.
-            # We ensure it's a flat list of floats.
-            if hasattr(embedding, "tolist"):
-                embedding = embedding.tolist()
+            # 1. Verify HTTP success
+            if response.status_code != 200:
+                # Retry on 5xx errors
+                if 500 <= response.status_code < 600:
+                    attempt += 1
+                    if attempt < MAX_RETRIES:
+                        time.sleep(RETRY_DELAY * attempt)
+                        continue
+                raise Exception(f"Cloudflare API error: {response.status_code} - {response.text}")
 
-            if not isinstance(embedding, list):
-                raise TypeError(f"Expected list for embedding, got {type(embedding)}")
+            data = response.json()
 
-            # Handle cases where the API might return a 2D list [[...]]
-            if len(embedding) > 0 and isinstance(embedding[0], list):
-                embedding = embedding[0]
+            # 2. Verify Cloudflare reports success
+            if not data.get("success"):
+                raise Exception(f"Cloudflare API returned failure: {data.get('errors', 'Unknown error')}")
 
-            # 2. Verify the exact output dimension (must be 384)
-            if len(embedding) != EXPECTED_DIM:
+            # 3. Inspect and extract the embedding vector
+            # Cloudflare Workers AI returns result.data as a list of vectors
+            result = data.get("result")
+            if not result or "data" not in result:
+                raise Exception(f"Unexpected response format: 'result.data' not found. Response: {data}")
+
+            embeddings = result["data"]
+
+            # Since we send a single string, we expect a list containing one vector
+            if not isinstance(embeddings, list) or len(embeddings) == 0:
+                raise Exception("Cloudflare API returned empty or invalid embedding data.")
+
+            vector = embeddings[0]
+
+            # 4. Verify flat vector of exactly 384 floats
+            if not isinstance(vector, list):
+                raise TypeError(f"Expected embedding vector to be a list, got {type(vector)}")
+
+            if len(vector) != EXPECTED_DIM:
                 raise ValueError(
-                    f"Embedding dimension mismatch: expected {EXPECTED_DIM}, got {len(embedding)}"
+                    f"Embedding dimension mismatch: expected {EXPECTED_DIM}, got {len(vector)}"
                 )
 
-            return embedding
+            return vector
 
-        except Exception as e:
-            error_msg = str(e).lower()
-            # Retry on 503 (Service Unavailable/Model Loading)
-            if "503" in error_msg or "loading" in error_msg:
-                attempt += 1
-                if attempt < MAX_RETRIES:
-                    time.sleep(RETRY_DELAY * attempt)
-                    continue
+        except requests.exceptions.RequestException as e:
+            attempt += 1
+            if attempt < MAX_RETRIES:
+                time.sleep(RETRY_DELAY * attempt)
+                continue
+            raise Exception(f"Network error calling Cloudflare API: {str(e)}")
 
-            # For all other errors, raise immediately
-            raise Exception(f"Hugging Face API error after {attempt+1} attempts: {str(e)}")
-
-    raise Exception("Max retries exceeded while calling Hugging Face API.")
+    raise Exception("Max retries exceeded while calling Cloudflare API.")

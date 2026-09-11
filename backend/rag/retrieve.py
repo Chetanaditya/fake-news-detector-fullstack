@@ -22,7 +22,7 @@ def _get_pinecone_index():
     return _pc_index
 
 def retrieve_context(query, top_k=3):
-    # Use external API for embedding
+    # Use external API for embedding (Cloudflare Workers AI)
     query_embedding = get_embedding(query)
 
     # Initialize Pinecone lazily

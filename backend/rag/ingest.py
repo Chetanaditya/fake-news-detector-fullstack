@@ -20,7 +20,7 @@ for i, doc in enumerate(documents):
     if not text:
         continue
 
-    # Use external API for embedding
+    # Use external API for embedding (Cloudflare Workers AI)
     embedding = get_embedding(text)
 
     # Pinecone structure: (id, vector, metadata)
