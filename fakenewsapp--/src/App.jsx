@@ -125,8 +125,15 @@ export default function App() {
   const [error, setError] = useState("");
   const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("input");
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const textareaRef = useRef(null);
   const abortRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem("fnc_history");
@@ -223,7 +230,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#030712", color: "#f9fafb", fontFamily: "'JetBrains Mono', 'Fira Code', monospace", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <header style={{ borderBottom: "1px solid #1f2937", padding: "0 24px", display: "flex", alignItems: "center", gap: 16, height: 56 }}>
+      <header style={{ borderBottom: "1px solid #1f2937", padding: isMobile ? "0 16px" : "0 24px", display: "flex", alignItems: "center", gap: 16, height: 56 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 28, height: 28, background: "#1d4ed8", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700 }}>N</div>
           <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", color: "#f3f4f6" }}>NEWSVERIFY</span>
@@ -233,9 +240,9 @@ export default function App() {
         <span style={{ fontSize: 10, color: "#374151", letterSpacing: "0.08em" }}>POWERED BY GROQ</span>
       </header>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", flex: 1, overflow: "hidden" }}>
         {/* Sidebar */}
-        <aside style={{ width: 220, borderRight: "1px solid #1f2937", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <aside style={{ width: isMobile ? "100%" : 220, borderRight: isMobile ? "none" : "1px solid #1f2937", borderBottom: isMobile ? "1px solid #1f2937" : "none", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           <div style={{ padding: "12px 14px", borderBottom: "1px solid #111827" }}>
             <div style={{ fontSize: 9, color: "#4b5563", letterSpacing: "0.12em", marginBottom: 8 }}>QUICK EXAMPLES</div>
             {EXAMPLE_ARTICLES.map((ex, i) => (
@@ -276,7 +283,7 @@ export default function App() {
 
           {/* Input Tab */}
           {activeTab === "input" && (
-            <div style={{ flex: 1, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ flex: 1, padding: isMobile ? 16 : 24, display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ fontSize: 10, color: "#4b5563", letterSpacing: "0.1em" }}>PASTE ARTICLE, HEADLINE, OR CLAIM BELOW</div>
               <textarea
                 ref={textareaRef}
@@ -301,7 +308,7 @@ export default function App() {
 
           {/* Result Tab */}
           {activeTab === "result" && (
-            <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? 16 : 24 }}>
               {loading && (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "60vh", gap: 16 }}>
                   <div style={{ width: 40, height: 40, border: "2px solid #1f2937", borderTop: "2px solid #3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
@@ -321,7 +328,7 @@ export default function App() {
               {!loading && result && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 720 }}>
                   {/* Verdict Banner */}
-                  <div style={{ background: vcfg.bg, border: `1px solid ${vcfg.border}`, borderRadius: 10, padding: "20px 24px" }}>
+                  <div style={{ background: vcfg.bg, border: `1px solid ${vcfg.border}`, borderRadius: 10, padding: isMobile ? "16px 16px" : "20px 24px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                       <div style={{ width: 48, height: 48, borderRadius: "50%", border: `2px solid ${vcfg.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: vcfg.text, fontWeight: 700 }}>{vcfg.icon}</div>
                       <div>
@@ -333,7 +340,7 @@ export default function App() {
                   </div>
 
                   {/* Two-col layout */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
                     {/* Signals */}
                     <div style={{ background: "#0f172a", border: "1px solid #1f2937", borderRadius: 8, padding: 16 }}>
                       <div style={{ fontSize: 9, color: "#4b5563", letterSpacing: "0.12em", marginBottom: 12 }}>SIGNALS DETECTED</div>
