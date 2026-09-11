@@ -1,7 +1,7 @@
 fastapi==0.136.1
 uvicorn==0.47.0
-sentence-transformers==5.1.1
 openai==1.102.0
 pydantic==2.11.7
 pinecone-client==5.0.1
 python-dotenv==1.0.1
+requests==2.32.3

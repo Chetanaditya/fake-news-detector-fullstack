@@ -1,14 +1,10 @@
-from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+from rag.embeddings import get_embedding
 
-# Initialize Embedding Model
-embedding_model = SentenceTransformer(
-    "BAAI/bge-small-en-v1.5"
-)
+load_dotenv()
 
 # Initialize Pinecone
 pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
@@ -24,7 +20,8 @@ for i, doc in enumerate(documents):
     if not text:
         continue
 
-    embedding = embedding_model.encode(text).tolist()
+    # Use external API for embedding
+    embedding = get_embedding(text)
 
     # Pinecone structure: (id, vector, metadata)
     vectors.append({

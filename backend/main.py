@@ -5,7 +5,7 @@ from openai import OpenAI
 import os
 from dotenv import load_dotenv
 
-from rag.retrieve import retrieve_context, _get_embedding_model, _get_pinecone_index
+from rag.retrieve import retrieve_context, _get_pinecone_index
 
 import json
 import threading
@@ -17,11 +17,8 @@ app = FastAPI()
 # 1. CORS Middleware (Standard)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://fake-news-detector-fullstack.vercel.app",
-        "http://localhost:5173",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,7 +30,6 @@ app.add_middleware(
 async def warmup_models():
     def load():
         try:
-            _get_embedding_model()
             _get_pinecone_index()
             print("🚀 RAG Models warmed up successfully in background.")
         except Exception as e:
