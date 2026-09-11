@@ -103,31 +103,14 @@ function ConfidenceBar({ value, verdict }) {
   );
 }
 
-function HistoryItem({ item, onReload }) {
-  const v = verdictConfig[item.result?.verdict] || {};
-  return (
-    <div
-      onClick={() => onReload(item)}
-      style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, transition: "background 0.15s" }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#111827")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-    >
-      <span style={{ fontSize: 14, color: v.text, background: v.bg, border: `1px solid ${v.border}`, borderRadius: 4, padding: "1px 6px", fontFamily: "monospace", fontWeight: 700, flexShrink: 0 }}>{item.result?.verdict?.[0]}</span>
-      <span style={{ fontSize: 11, color: "#9ca3af", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.text.slice(0, 55)}…</span>
-    </div>
-  );
-}
-
 export default function App() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("input");
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const textareaRef = useRef(null);
-  const abortRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -135,19 +118,7 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("fnc_history");
-    if (saved) {
-      try { setHistory(JSON.parse(saved)); } catch {}
-    }
-  }, []);
-
-  const saveHistory = (newHistory) => {
-    setHistory(newHistory);
-    localStorage.setItem("fnc_history", JSON.stringify(newHistory.slice(0, 20)));
-  };
-
- const analyze = async (inputText) => {
+  const analyze = async (inputText) => {
 
   const t = (inputText || text).trim();
 
@@ -181,17 +152,6 @@ export default function App() {
     // frontend expects direct JSON object
     setResult(data);
 
-    const newHistory = [
-      {
-        text: t,
-        result: data,
-        ts: Date.now(),
-      },
-      ...history,
-    ].slice(0, 20);
-
-    saveHistory(newHistory);
-
   } catch (e) {
 
     console.error(e);
@@ -217,12 +177,6 @@ export default function App() {
     setText(ex.text);
     setActiveTab("input");
     textareaRef.current?.focus();
-  };
-
-  const reloadHistory = (item) => {
-    setText(item.text);
-    setResult(item.result);
-    setActiveTab("result");
   };
 
   const vcfg = result ? verdictConfig[result.verdict] || {} : {};
@@ -254,19 +208,6 @@ export default function App() {
             ))}
           </div>
 
-          <div style={{ padding: "12px 14px", flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 9, color: "#4b5563", letterSpacing: "0.12em", marginBottom: 6, display: "flex", justifyContent: "space-between" }}>
-              <span>HISTORY</span>
-              {history.length > 0 && <span style={{ cursor: "pointer", color: "#374151" }} onClick={() => saveHistory([])}>CLEAR</span>}
-            </div>
-            <div style={{ flex: 1, overflowY: "auto" }}>
-              {history.length === 0 ? (
-                <div style={{ fontSize: 10, color: "#374151", marginTop: 8 }}>No analyses yet.</div>
-              ) : (
-                history.map((item, i) => <HistoryItem key={i} item={item} onReload={reloadHistory} />)
-              )}
-            </div>
-          </div>
         </aside>
 
         {/* Main */}
